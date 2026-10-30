@@ -1,8 +1,10 @@
 # ============================================================
-# HoneypotNet — Central Configuration
+# HoneypotNet — Central Configuration Template
 # ============================================================
-# Copy this file to config.yaml and fill in real values before
-# deploying.  All API keys below are placeholders.
+# Copy this file to config.yaml and configure your secrets.
+# All values can also be injected via environment variables:
+#   HONEYPOT_ADMIN_USERNAME, HONEYPOT_ADMIN_PASSWORD,
+#   HONEYPOT_SECRET_KEY, ABUSEIPDB_API_KEY, TELEGRAM_BOT_TOKEN
 # ============================================================
 
 general:
@@ -48,11 +50,14 @@ services:
 
 # ---- Admin dashboard ----
 admin:
-  host: "0.0.0.0"
+  # Bound to localhost (127.0.0.1) by default for security
+  host: "127.0.0.1"
   port: 5000
-  secret_key: "CHANGE-ME-to-a-random-64-char-string"
+  # Set via HONEYPOT_SECRET_KEY or provide a random 64-char string
+  secret_key: ""
   username: "admin"
-  password: "honeypot_admin_2024"
+  # Set via HONEYPOT_ADMIN_PASSWORD or provide here
+  password: ""
 
 # ---- Geolocation (ip-api.com — free tier, no key needed) ----
 geoip:
@@ -63,8 +68,8 @@ geoip:
 
 # ---- Threat Intelligence — AbuseIPDB ----
 threat_intel:
-  enabled: true
-  abuseipdb_api_key: "YOUR_ABUSEIPDB_API_KEY_HERE"
+  enabled: false
+  abuseipdb_api_key: ""
   abuseipdb_url: "https://api.abuseipdb.com/api/v2/check"
   # Confidence threshold (0-100) to flag an IP as malicious
   confidence_threshold: 50
@@ -79,16 +84,15 @@ alerting:
     smtp_host: "smtp.gmail.com"
     smtp_port: 587
     use_tls: true
-    username: "your-email@gmail.com"
-    password: "your-app-password"
-    from_addr: "your-email@gmail.com"
-    to_addrs:
-      - "security-team@example.com"
+    username: ""
+    password: ""
+    from_addr: ""
+    to_addrs: []
 
   telegram:
     enabled: false
-    bot_token: "YOUR_TELEGRAM_BOT_TOKEN"
-    chat_id: "YOUR_TELEGRAM_CHAT_ID"
+    bot_token: ""
+    chat_id: ""
 
 # ---- Rate-limiting (per-IP, across all services) ----
 rate_limiting:

@@ -83,6 +83,10 @@ import core.config_loader
 
 core.config_loader.cfg = _TEST_CONFIG
 
+def setUpModule():
+    from core.logger import init_db
+    init_db()
+
 from core.logger import init_db, log_event, query_events, count_events, get_service_stats, setup_file_logging
 from core.geoip import lookup as geo_lookup, _is_private
 from core.threat_intel import check_ip

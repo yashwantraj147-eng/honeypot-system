@@ -21,8 +21,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project source
 COPY . .
 
-# Create data / log directories
-RUN mkdir -p /app/data /app/logs
+# Create unprivileged runtime user and data directories for defense-in-depth
+RUN groupadd -g 10001 honeypot && \
+    useradd -u 10001 -g honeypot -s /sbin/nologin -M honeypot && \
+    mkdir -p /app/data /app/logs && \
+    chown -R honeypot:honeypot /app
+
+USER honeypot:honeypot
 
 # Default command runs the monolith launcher
 CMD ["python", "main.py"]
