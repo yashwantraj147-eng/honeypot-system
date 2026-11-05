@@ -1,28 +1,55 @@
-# ============================================================
-#  HoneypotNet — Base Dockerfile (shared by all services)
-# ============================================================
-FROM python:3.12-slim
+# ==============================================================================
+# Honeypot-System v2.0 - Production Multi-Stage Dockerfile
+# ==============================================================================
 
-# Prevent Python from writing .pyc files and enable unbuffered output
+# Stage 1: Build Dependencies
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Stage 2: Minimal Runtime
+FROM python:3.11-slim AS final
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 WORKDIR /app
 
-# Install system deps (needed for paramiko's cryptography wheel)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc libffi-dev && \
-    rm -rf /var/lib/apt/lists/*
+# Install minimal runtime utility for Docker health checks
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy installed python dependencies from builder
+COPY --from=builder /install /usr/local
 
-# Copy project source
-COPY . .
+# Copy application source code
+COPY core/ /app/core/
+COPY services/ /app/services/
+COPY api/ /app/api/
+COPY main.py /app/main.py
 
-# Create data / log directories
-RUN mkdir -p /app/data /app/logs
+# Create persistent storage directories
+RUN mkdir -p /app/data /app/recordings
 
-# Default command runs the monolith launcher
-CMD ["python", "main.py"]
+# Expose Decoy Service Ports and Telemetry API
+EXPOSE 2222 8080 2121 2323 9090
+
+# Ensure graceful SIGTERM propagation
+STOPSIGNAL SIGTERM
+
+# Container health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:9090/api/v1/health || exit 1
+
+ENTRYPOINT ["python", "main.py"]
