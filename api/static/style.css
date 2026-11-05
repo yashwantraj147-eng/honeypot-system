@@ -1,5 +1,5 @@
 /* 
-Honeypot-System v2.0 - Custom Cybersecurity Dashboard Styling
+Honeypot-System v2.0 - Enterprise Cybersecurity Dashboard Styling
 */
 
 /* Cyber Panel Glowing Hover Effects */
@@ -10,17 +10,32 @@ Honeypot-System v2.0 - Custom Cybersecurity Dashboard Styling
 
 .cyber-card:hover {
     border-color: rgba(6, 182, 212, 0.4);
-    box-shadow: 0 4px 20px -2px rgba(6, 182, 212, 0.12);
+    box-shadow: 0 4px 25px -2px rgba(6, 182, 212, 0.12);
 }
 
-/* Pulsing Radar Blip on Leaflet Map */
+/* Pulsing Radar Blips on Leaflet Map */
 .radar-blip {
     position: relative;
     width: 14px;
     height: 14px;
     border-radius: 50%;
     background-color: #ef4444;
-    box-shadow: 0 0 10px #f87171;
+    box-shadow: 0 0 12px #f87171;
+}
+
+.radar-blip.blip-critical {
+    background-color: #ef4444;
+    box-shadow: 0 0 14px #ef4444;
+}
+
+.radar-blip.blip-elevated {
+    background-color: #f97316;
+    box-shadow: 0 0 12px #f97316;
+}
+
+.radar-blip.blip-low {
+    background-color: #06b6d4;
+    box-shadow: 0 0 10px #06b6d4;
 }
 
 .radar-blip::after {
@@ -32,7 +47,7 @@ Honeypot-System v2.0 - Custom Cybersecurity Dashboard Styling
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 2px solid #ef4444;
+    border: 2px solid currentColor;
     opacity: 0.8;
     animation: radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
@@ -46,6 +61,21 @@ Honeypot-System v2.0 - Custom Cybersecurity Dashboard Styling
         transform: translate(-50%, -50%) scale(2.2);
         opacity: 0;
     }
+}
+
+/* MITRE ATT&CK Matrix Active Illuminated Cells */
+.mitre-cell {
+    transition: all 0.3s ease;
+}
+
+.mitre-cell.active-hit {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.mitre-cell.active-hit .text-slate-300 {
+    color: #f87171 !important;
 }
 
 /* CRT Scanline Effect inside Terminal Modal */
@@ -69,14 +99,14 @@ Honeypot-System v2.0 - Custom Cybersecurity Dashboard Styling
     z-index: 10;
 }
 
-/* Dark Custom Scrollbars */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #070a13;
+    background: #050811;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -90,19 +120,18 @@ Honeypot-System v2.0 - Custom Cybersecurity Dashboard Styling
 
 /* Leaflet Dark Mode Adjustments */
 .leaflet-container {
-    background: #070a13 !important;
+    background: #050811 !important;
     outline: none;
 }
 
 .leaflet-popup-content-wrapper {
-    background: #111a2e !important;
+    background: #10172a !important;
     color: #e2e8f0 !important;
     border: 1px solid #1e293b;
     border-radius: 8px !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.6) !important;
 }
 
 .leaflet-popup-tip {
-    background: #111a2e !important;
+    background: #10172a !important;
 }
-

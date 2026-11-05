@@ -1,9 +1,9 @@
 """
 services/http_service.py
 ────────────────────────
-Asynchronous Web Decoy Trap (aiohttp.web).
-Features fake credential lures (/.env, /wp-login.php, /actuator/health),
-active scanner tarpitting, and defense gzip decompression bombs.
+Enterprise Web Decoy Trap (aiohttp.web).
+Features multiple attack surface lures (/.env, /wp-login.php, /xmlrpc.php, Spring Actuator,
+Log4j/JNDI injection traps), active scanner tarpitting, and defense gzip decompression bombs.
 """
 
 import asyncio
@@ -12,6 +12,7 @@ import datetime
 import gzip
 import json
 import logging
+import re
 import time
 from typing import Dict, List, Optional
 
@@ -56,19 +57,28 @@ def _should_tarpit(ip: str) -> bool:
     return len(timestamps) > 10
 
 
-def _is_malicious_probe(request: web.Request) -> bool:
-    """Detect directory traversal patterns or automated scanner user-agents."""
+def _detect_exploit_payloads(request: web.Request) -> Optional[str]:
+    """Inspect headers and query parameters for active weaponization (e.g. Log4j JNDI, Traversal)."""
+    # 1. Check path traversal
     path = request.path_qs.lower()
+    if any(trigger in path for trigger in ("..", "%2e%2e", "/etc/passwd", "win.ini")):
+        return "Directory Traversal Probe"
+
+    # 2. Check scanner user agents
     user_agent = request.headers.get("User-Agent", "").lower()
+    if any(agent in user_agent for agent in ("nikto", "sqlmap", "nmap", "masscan", "zgrab", "acunetix", "dirbuster", "gobuster")):
+        return "Automated Vulnerability Scanner"
 
-    traversal_triggers = ("..", "%2e%2e", "/etc/passwd", "win.ini", "boot.ini", "%00")
-    scanner_agents = ("nikto", "sqlmap", "nmap", "masscan", "zgrab", "acunetix", "dirbuster", "gobuster", "wpscan")
+    # 3. Check Log4Shell / JNDI in headers
+    jndi_pattern = re.compile(r"(?i)\$\{jndi:(ldap|rmi|dns)://")
+    for header_name, header_val in request.headers.items():
+        if jndi_pattern.search(header_val):
+            return f"Log4j JNDI Exploit in Header '{header_name}': {header_val}"
 
-    if any(trigger in path for trigger in traversal_triggers):
-        return True
-    if any(agent in user_agent for agent in scanner_agents):
-        return True
-    return False
+    if jndi_pattern.search(request.path_qs):
+        return f"Log4j JNDI Exploit in Query: {request.path_qs}"
+
+    return None
 
 
 async def _stream_tarpit(request: web.Request, body: bytes, content_type: str = "text/plain") -> web.StreamResponse:
@@ -94,7 +104,7 @@ async def handle_env(request: web.Request) -> web.Response:
     if not tags:
         tags = [{
             "technique_id": "T1552.001",
-            "name": "Credentials in Files: Local Environment",
+            "name": "Credentials in Files",
             "tactic": "Credential Access"
         }]
 
@@ -147,7 +157,7 @@ async def handle_login_get(request: web.Request) -> web.Response:
         payload=f"GET {request.path}",
         mitre_tags=[{
             "technique_id": "T1190",
-            "name": "Exploit Public-Facing Application: Reconnaissance",
+            "name": "Exploit Public-Facing Application",
             "tactic": "Initial Access"
         }]
     )
@@ -200,7 +210,10 @@ async def handle_login_post(request: web.Request) -> web.Response:
     client_ip = _get_client_ip(request)
     data = {}
     try:
-        data = await request.post()
+        if request.content_type == "application/json":
+            data = await request.json()
+        else:
+            data = await request.post()
     except Exception:
         pass
 
@@ -216,13 +229,12 @@ async def handle_login_post(request: web.Request) -> web.Response:
         payload=f"POST {request.path} [auth attempt]",
         credentials=cred_str,
         mitre_tags=[{
-            "technique_id": "T1110",
-            "name": "Brute Force: Credential Stuffing",
+            "technique_id": "T1110.001",
+            "name": "Password Guessing (Brute Force)",
             "tactic": "Credential Access"
         }]
     )
 
-    # Return authentic authentication error
     error_html = """<!DOCTYPE html>
 <html>
 <body style="background:#0b0f19;color:#f87171;font-family:sans-serif;padding:3rem;text-align:center;">
@@ -232,6 +244,42 @@ async def handle_login_post(request: web.Request) -> web.Response:
 </body>
 </html>"""
     return web.Response(text=error_html, content_type="text/html", status=401)
+
+
+async def handle_xmlrpc(request: web.Request) -> web.Response:
+    """Trap: WordPress XML-RPC multicall brute-force exploitation."""
+    client_ip = _get_client_ip(request)
+    body = ""
+    try:
+        body = await request.text()
+    except Exception:
+        pass
+
+    await log_attack(
+        source_ip=client_ip,
+        service="HTTP",
+        payload=f"POST /xmlrpc.php [XML-RPC Attack: {len(body)} bytes]",
+        mitre_tags=[{
+            "technique_id": "T1110.001",
+            "name": "Password Guessing: XML-RPC Multicall",
+            "tactic": "Credential Access"
+        }]
+    )
+
+    xml_fault = (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<methodResponse>\n"
+        "  <fault>\n"
+        "    <value>\n"
+        "      <struct>\n"
+        "        <member><name>faultCode</name><value><int>403</int></value></member>\n"
+        "        <member><name>faultString</name><value><string>Incorrect username or password.</string></value></member>\n"
+        "      </struct>\n"
+        "    </value>\n"
+        "  </fault>\n"
+        "</methodResponse>"
+    )
+    return web.Response(text=xml_fault, content_type="text/xml", status=200)
 
 
 async def handle_actuator(request: web.Request) -> web.Response:
@@ -298,31 +346,40 @@ async def handle_config_json(request: web.Request) -> web.Response:
 
 
 async def handle_catchall(request: web.Request) -> web.Response:
-    """Catch-all for scanning probes, directory traversals, and automated tools."""
+    """Catch-all for scanning probes, directory traversals, Log4Shell, and automated tools."""
     client_ip = _get_client_ip(request)
 
-    # Active Defense: Trigger gzip decompression bomb if path traversal or scanner agent detected
-    if _is_malicious_probe(request):
-        logger.warning("[HTTP] Malicious scanner detected from %s. Deploying Gzip Defense Bomb.", client_ip)
+    exploit_type = _detect_exploit_payloads(request)
+    if exploit_type:
+        logger.warning("[HTTP] Exploit detected from %s: %s", client_ip, exploit_type)
         await log_attack(
             source_ip=client_ip,
             service="HTTP",
-            payload=f"{request.method} {request.path_qs} [GZIP_BOMB_DEPLOYED]",
+            payload=f"{request.method} {request.path_qs} [{exploit_type}]",
             mitre_tags=[{
                 "technique_id": "T1190",
-                "name": "Exploit Public-Facing Application: Scanner / Path Traversal",
+                "name": "Exploit Public-Facing Application: Weaponized Payload",
                 "tactic": "Initial Access"
             }]
         )
-        return web.Response(
-            body=_GZIP_BOMB_PAYLOAD,
-            headers={
-                "Content-Encoding": "gzip",
-                "Content-Type": "text/html",
-                "X-Honeypot-Defense": "Active-Tarpit-Triggered"
-            },
-            status=200
-        )
+
+        # Deploy safe 10MB gzip bomb against active scanner bots
+        if "Scanner" in exploit_type or "Traversal" in exploit_type:
+            return web.Response(
+                body=_GZIP_BOMB_PAYLOAD,
+                headers={
+                    "Content-Encoding": "gzip",
+                    "Content-Type": "text/html",
+                    "X-Honeypot-Defense": "Active-Tarpit-GzipBomb"
+                },
+                status=200
+            )
+        else:
+            return web.Response(
+                text="<html><body><h1>502 Bad Gateway</h1><hr><p>Upstream proxy timeout.</p></body></html>",
+                content_type="text/html",
+                status=502
+            )
 
     # Standard reconnaissance classification
     tags = classify_payload(request.path_qs)
@@ -362,12 +419,14 @@ async def start_http_service(host: str = "0.0.0.0", port: int = 8080) -> None:
 
     app.router.add_get("/wp-login.php", handle_login_get)
     app.router.add_post("/wp-login.php", handle_login_post)
+    app.router.add_route("*", "/xmlrpc.php", handle_xmlrpc)
     app.router.add_get("/admin", handle_login_get)
     app.router.add_post("/admin", handle_login_post)
     app.router.add_get("/login", handle_login_get)
     app.router.add_post("/login", handle_login_post)
 
     app.router.add_get("/actuator/health", handle_actuator)
+    app.router.add_get("/actuator/env", handle_actuator)
     app.router.add_get("/config.json", handle_config_json)
 
     # Catch-all

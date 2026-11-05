@@ -1,9 +1,9 @@
 """
 api/server.py
 ─────────────
-FastAPI Orchestrator for Honeypot-System v2.0.
+Enterprise FastAPI Orchestrator for Honeypot-System v2.0.
 Coordinates asynchronous decoy network listeners, real-time WebSocket attack streams,
-session playback API, threat telemetry, and SOC dashboard static assets.
+threat dossiers, session playback API, and SOC dashboard static assets.
 """
 
 import asyncio
@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import aiosqlite
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -32,7 +33,6 @@ from services.http_service import start_http_service, stop_http_service
 from services.ssh_service import start_ssh_service, stop_ssh_service
 from services.telnet_service import start_telnet_service, stop_telnet_service
 
-# Configure structured logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -85,10 +85,10 @@ async def lifespan(app: FastAPI):
     Initializes database schema, mounts event listeners, and starts all background decoy services.
     """
     logger.info("=================================================================")
-    logger.info("  Honeypot-System v2.0 - Autonomous Deception Grid Starting     ")
+    logger.info("  Honeypot-System v2.0 Enterprise Deception Grid Starting        ")
     logger.info("=================================================================")
 
-    # 1. Initialize SQLite Database
+    # 1. Initialize SQLite Database & Migrations
     await init_db()
 
     # 2. Register real-time WebSocket dispatcher callback
@@ -124,7 +124,7 @@ async def lifespan(app: FastAPI):
         "All decoys operational: SSH (%d), HTTP (%d), FTP (%d), Telnet (%d)",
         settings.SSH_PORT, settings.HTTP_PORT, settings.FTP_PORT, settings.TELNET_PORT
     )
-    logger.info("Telemetry Dashboard & API active on http://0.0.0.0:%d", settings.API_PORT)
+    logger.info("Enterprise SOC Dashboard & API active on http://0.0.0.0:%d", settings.API_PORT)
 
     yield
 
@@ -143,13 +143,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Honeypot-System v2.0 API",
+    title="Honeypot-System v2.0 Enterprise API",
     description="Autonomous Multi-Service Deception Grid & Real-Time Threat Intelligence Pipeline",
     version="2.0.0",
     lifespan=lifespan
 )
 
-# Enable CORS for SOC integrations
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -178,22 +177,22 @@ async def serve_dashboard() -> FileResponse:
 
 @app.get("/api/v1/health")
 async def health_check() -> Dict[str, Any]:
-    """Health check endpoint indicating active sensor status and listener ports."""
+    """Health check endpoint indicating active sensor status, listeners, and memory metrics."""
     return {
         "status": "HEALTHY",
         "sensor_name": settings.SENSOR_NAME,
         "services": {
-            "ssh": {"port": settings.SSH_PORT, "active": True},
-            "http": {"port": settings.HTTP_PORT, "active": True},
-            "ftp": {"port": settings.FTP_PORT, "active": True},
-            "telnet": {"port": settings.TELNET_PORT, "active": True},
+            "ssh": {"port": settings.SSH_PORT, "active": True, "type": "Medium-Interaction (VFS)"},
+            "http": {"port": settings.HTTP_PORT, "active": True, "type": "Multi-Surface Decoy"},
+            "ftp": {"port": settings.FTP_PORT, "active": True, "type": "RFC 959 Trap"},
+            "telnet": {"port": settings.TELNET_PORT, "active": True, "type": "RFC 854 Mirai IoT Trap"},
         }
     }
 
 
 @app.get("/api/v1/stats")
 async def get_stats() -> Dict[str, Any]:
-    """Retrieve telemetry metrics, attack volumes, and MITRE ATT&CK breakdowns."""
+    """Retrieve telemetry metrics, attack volumes, risk scores, and MITRE distributions."""
     return await get_system_stats()
 
 
@@ -203,6 +202,57 @@ async def get_recent_attacks_api(limit: int = 50) -> List[Dict[str, Any]]:
     return await get_recent_attacks(limit=limit)
 
 
+@app.get("/api/v1/attacker/{ip}")
+async def get_attacker_dossier(ip: str) -> Dict[str, Any]:
+    """
+    Generate an in-depth Threat Actor Dossier for an individual attacking IP address,
+    including attack timeline, observed credentials, fingerprints, and aggregated risk score.
+    """
+    async with aiosqlite.connect(settings.DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT id, timestamp, service, payload, credentials,
+                   geoip_country, geoip_city, latitude, longitude,
+                   mitre_technique_id, mitre_name, mitre_tactic,
+                   fingerprint, risk_score, severity
+            FROM attacks
+            WHERE source_ip = ?
+            ORDER BY id DESC
+            LIMIT 50
+        """, (ip,)) as cursor:
+            rows = await cursor.fetchall()
+            if not rows:
+                raise HTTPException(status_code=404, detail=f"No telemetry found for IP: {ip}")
+
+            attacks = [dict(r) for r in rows]
+            latest = attacks[0]
+
+            services_targeted = sorted(list(set(a["service"] for a in attacks)))
+            credentials_attempted = sorted(list(set(a["credentials"] for a in attacks if a["credentials"])))
+            mitre_techniques = sorted(list(set(a["mitre_technique_id"] for a in attacks if a["mitre_technique_id"])))
+            max_risk = max(a.get("risk_score", 25) for a in attacks)
+
+            return {
+                "source_ip": ip,
+                "total_events": len(attacks),
+                "first_seen": attacks[-1]["timestamp"],
+                "last_seen": latest["timestamp"],
+                "max_risk_score": max_risk,
+                "primary_severity": latest.get("severity", "LOW"),
+                "primary_fingerprint": latest.get("fingerprint", "Generic Reconnaissance Probe"),
+                "geolocation": {
+                    "country": latest.get("geoip_country"),
+                    "city": latest.get("geoip_city"),
+                    "lat": latest.get("latitude"),
+                    "lon": latest.get("longitude")
+                },
+                "services_targeted": services_targeted,
+                "credentials_attempted": credentials_attempted,
+                "mitre_techniques": mitre_techniques,
+                "timeline": attacks[:20]
+            }
+
+
 @app.get("/api/v1/session/{session_id}/replay")
 async def get_session_replay(session_id: str) -> Dict[str, Any]:
     """Deliver recorded keystroke stream for an interactive attacker session."""
@@ -210,7 +260,6 @@ async def get_session_replay(session_id: str) -> Dict[str, Any]:
     target_file = recordings_dir / f"ssh_{session_id}.json"
 
     if not target_file.exists():
-        # Fallback check without prefix
         target_file = recordings_dir / f"{session_id}.json"
 
     if not target_file.exists():
@@ -229,14 +278,12 @@ async def websocket_attacks_endpoint(websocket: WebSocket) -> None:
     """Real-time bi-directional WebSocket channel streaming live decoy intrusions."""
     await ws_manager.connect(websocket)
     try:
-        # Send initial confirmation packet
         await websocket.send_text(json.dumps({
             "type": "connection_ack",
             "sensor": settings.SENSOR_NAME,
-            "message": "Connected to real-time attack telemetry feed"
+            "message": "Connected to Honeypot-System v2.0 real-time telemetry feed"
         }))
         while True:
-            # Keep connection alive; handle potential incoming client ping
             data = await websocket.receive_text()
             if data == "ping":
                 await websocket.send_text(json.dumps({"type": "pong"}))
@@ -245,4 +292,3 @@ async def websocket_attacks_endpoint(websocket: WebSocket) -> None:
     except Exception as exc:
         logger.debug("WebSocket error: %s", exc)
         ws_manager.disconnect(websocket)
-

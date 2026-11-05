@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Honeypot-System v2.0 | Autonomous Deception Grid & Threat Intelligence</title>
+    <title>Honeypot-System v2.0 Enterprise | Autonomous Deception Grid & Threat Intel Pipeline</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -13,9 +13,9 @@
                 extend: {
                     colors: {
                         cyber: {
-                            darkest: '#070a13',
-                            dark: '#0c1222',
-                            panel: '#111a2e',
+                            darkest: '#050811',
+                            dark: '#0a0f1d',
+                            panel: '#10172a',
                             border: '#1e293b',
                             accent: '#06b6d4',
                             danger: '#ef4444',
@@ -24,7 +24,7 @@
                         }
                     },
                     fontFamily: {
-                        mono: ['Courier New', 'Consolas', 'monospace']
+                        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace']
                     }
                 }
             }
@@ -39,39 +39,48 @@
 <body class="bg-cyber-darkest text-slate-200 min-h-screen flex flex-col font-sans antialiased selection:bg-cyan-500 selection:text-black">
 
     <!-- Top Navigation Header -->
-    <header class="border-b border-cyber-border bg-cyber-dark/80 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5">
+    <header class="border-b border-cyber-border bg-cyber-dark/90 backdrop-blur-md sticky top-0 z-40 px-6 py-3">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center space-x-3">
-                <div class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_12px_#22d3ee] animate-pulse"></div>
-                <h1 class="text-lg font-bold tracking-wider uppercase text-white flex items-center gap-2">
-                    <span>Honeypot-System</span>
-                    <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">v2.0</span>
-                </h1>
-                <span class="text-slate-600">|</span>
-                <span class="text-xs text-slate-400 hidden sm:inline-block font-mono tracking-tight" id="sensor-id-badge">SENSOR: INITIALIZING...</span>
+                <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 shadow-[0_0_14px_#22d3ee] animate-pulse"></div>
+                <div>
+                    <h1 class="text-base font-bold tracking-wider uppercase text-white flex items-center gap-2">
+                        <span>Honeypot-System</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono font-semibold">ENTERPRISE v2.0</span>
+                    </h1>
+                    <div class="text-[11px] text-slate-400 font-mono flex items-center gap-2">
+                        <span id="sensor-id-badge">NODE: INITIALIZING...</span>
+                        <span>&bull;</span>
+                        <span class="text-emerald-400">4 DECOY LISTENER SOCKETS ARMED</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Status Pill & Live Clock -->
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-2 bg-emerald-950/60 border border-emerald-800/80 px-3 py-1 rounded-full text-xs text-emerald-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span class="tracking-wide uppercase font-semibold text-[11px]" id="system-status-indicator">GRID ARMED & MONITORING</span>
+            <!-- Threat Level & Live Controls -->
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-2 bg-rose-950/60 border border-rose-800/80 px-3 py-1 rounded-full text-xs text-rose-300 font-medium shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                    <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+                    <span class="tracking-wide uppercase font-semibold text-[11px]" id="system-status-indicator">DECEPTION GRID LIVE</span>
                 </div>
 
-                <div class="text-right hidden md:block">
+                <div class="text-right hidden md:block border-l border-slate-800 pl-3">
                     <div class="text-xs font-mono font-bold text-cyan-400" id="utc-clock">00:00:00 UTC</div>
-                    <div class="text-[10px] text-slate-400 uppercase tracking-widest">Global Defense Grid</div>
+                    <div class="text-[10px] text-slate-500 font-mono">TELEMETRY SYNCED</div>
                 </div>
 
-                <!-- Threat Feed Quick Links -->
-                <div class="flex items-center space-x-2">
-                    <a href="/api/v1/feed/firewall.txt" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 transition flex items-center gap-1.5" title="Consumable plain-text blocklist for pfSense/OPNsense/iptables">
-                        <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        <span>CIDR Feed</span>
+                <!-- Threat Feed Export Controls -->
+                <div class="flex items-center space-x-1.5">
+                    <a href="/api/v1/feed/firewall.txt" target="_blank" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 transition flex items-center gap-1 font-mono" title="Plain-text CIDR blocklist for pfSense / OPNsense / iptables">
+                        <span class="text-amber-400">🛡️</span> CIDR
                     </a>
-                    <a href="/api/v1/feed/stix.json" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 transition flex items-center gap-1.5" title="STIX 2.1 Threat Intel Bundle for Splunk / Sentinel">
-                        <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        <span>STIX 2.1</span>
+                    <a href="/api/v1/feed/stix.json" target="_blank" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 transition flex items-center gap-1 font-mono" title="OASIS STIX 2.1 Threat Intel Bundle for Splunk / Sentinel">
+                        <span class="text-cyan-400">⚡</span> STIX 2.1
+                    </a>
+                    <a href="/api/v1/feed/snort.rules" target="_blank" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 transition flex items-center gap-1 font-mono" title="Automated Snort / Suricata IDS rule signatures">
+                        <span class="text-purple-400">📜</span> Snort Rules
+                    </a>
+                    <a href="/api/v1/feed/iocs.json" target="_blank" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 transition flex items-center gap-1 font-mono" title="Machine-readable IOCs feed for MISP / OpenCTI">
+                        <span class="text-emerald-400">🔍</span> IOCs
                     </a>
                 </div>
             </div>
@@ -84,9 +93,9 @@
         <!-- Metrics Overview Cards -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Total Intrusions -->
-            <div class="cyber-card p-4 rounded-xl bg-cyber-panel/90 border border-cyber-border flex items-center justify-between">
+            <div class="cyber-card p-4 rounded-xl bg-cyber-panel border border-cyber-border flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Intrusions</p>
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-mono">Total Intrusions</p>
                     <h3 class="text-2xl font-bold text-white mt-1 font-mono" id="stat-total-attacks">0</h3>
                     <p class="text-[11px] text-cyan-400 mt-0.5 flex items-center gap-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Real-time aggregate
@@ -98,9 +107,9 @@
             </div>
 
             <!-- Unique Threat Actors -->
-            <div class="cyber-card p-4 rounded-xl bg-cyber-panel/90 border border-cyber-border flex items-center justify-between">
+            <div class="cyber-card p-4 rounded-xl bg-cyber-panel border border-cyber-border flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Unique Attacker IPs</p>
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-mono">Unique Attacker IPs</p>
                     <h3 class="text-2xl font-bold text-white mt-1 font-mono" id="stat-unique-ips">0</h3>
                     <p class="text-[11px] text-amber-400 mt-0.5 flex items-center gap-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Globally geocoded
@@ -111,110 +120,188 @@
                 </div>
             </div>
 
-            <!-- Blocklisted IPs -->
-            <div class="cyber-card p-4 rounded-xl bg-cyber-panel/90 border border-cyber-border flex items-center justify-between">
+            <!-- Threat Risk Index -->
+            <div class="cyber-card p-4 rounded-xl bg-cyber-panel border border-cyber-border flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">High-Confidence Threats</p>
-                    <h3 class="text-2xl font-bold text-rose-400 mt-1 font-mono" id="stat-threats-count">0</h3>
-                    <p class="text-[11px] text-rose-400 mt-0.5 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Synced to Threat Feeds
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-mono">Avg Threat Risk Score</p>
+                    <h3 class="text-2xl font-bold mt-1 font-mono text-rose-400" id="stat-threat-score">0 / 100</h3>
+                    <p class="text-[11px] text-rose-400 mt-0.5 flex items-center gap-1" id="stat-risk-label">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span> Threat Index
                     </p>
                 </div>
                 <div class="w-11 h-11 rounded-lg bg-rose-950/80 border border-rose-800 flex items-center justify-center text-rose-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                 </div>
             </div>
 
-            <!-- Decoy Grid Matrix -->
-            <div class="cyber-card p-4 rounded-xl bg-cyber-panel/90 border border-cyber-border flex items-center justify-between">
+            <!-- Blocklisted IPs -->
+            <div class="cyber-card p-4 rounded-xl bg-cyber-panel border border-cyber-border flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Decoys</p>
-                    <div class="flex items-center gap-2 mt-1.5">
-                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">SSH:22</span>
-                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">HTTP:80</span>
-                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">FTP:21</span>
-                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">TEL:23</span>
-                    </div>
-                    <p class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 4 Decoy Listeners Ready
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-mono">High-Confidence Threats</p>
+                    <h3 class="text-2xl font-bold text-amber-300 mt-1 font-mono" id="stat-threats-count">0</h3>
+                    <p class="text-[11px] text-amber-300 mt-0.5 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Synced to Threat Feeds
                     </p>
                 </div>
-                <div class="w-11 h-11 rounded-lg bg-emerald-950/80 border border-emerald-800 flex items-center justify-center text-emerald-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                <div class="w-11 h-11 rounded-lg bg-amber-950/80 border border-amber-800 flex items-center justify-center text-amber-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 </div>
             </div>
         </section>
 
-        <!-- World Threat Map & MITRE Analytics Row -->
+        <!-- World Threat Radar & Top Botnets Row -->
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- World Attack Map (2 Columns) -->
-            <div class="lg:col-span-2 cyber-card bg-cyber-panel/90 border border-cyber-border rounded-xl p-4 flex flex-col">
+            <div class="lg:col-span-2 cyber-card bg-cyber-panel border border-cyber-border rounded-xl p-4 flex flex-col">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center space-x-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] animate-pulse"></span>
-                        <h2 class="text-sm font-semibold tracking-wide uppercase text-white">Live Global Deception Radar</h2>
+                        <h2 class="text-sm font-semibold tracking-wide uppercase text-white font-mono">Global Cyber Deception Radar</h2>
                     </div>
-                    <span class="text-xs font-mono text-slate-400">Pulsing telemetry markers</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-mono text-slate-400">Pulsing telemetry markers</span>
+                    </div>
                 </div>
-                <div id="radar-map" class="w-full h-[360px] rounded-lg border border-cyber-border bg-[#0a0f1d] z-10"></div>
+                <div id="radar-map" class="w-full h-[370px] rounded-lg border border-cyber-border bg-[#0a0f1d] z-10"></div>
             </div>
 
-            <!-- MITRE ATT&CK Tactics Breakdown -->
-            <div class="cyber-card bg-cyber-panel/90 border border-cyber-border rounded-xl p-4 flex flex-col justify-between">
+            <!-- Botnet & Tool Fingerprint Breakdown -->
+            <div class="cyber-card bg-cyber-panel border border-cyber-border rounded-xl p-4 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-sm font-semibold tracking-wide uppercase text-white flex items-center gap-2">
-                            <span>MITRE ATT&CK Matrix</span>
+                        <h2 class="text-sm font-semibold tracking-wide uppercase text-white font-mono flex items-center gap-2">
+                            <span>Detected Botnet Signatures</span>
                         </h2>
-                        <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">v14.1</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-mono font-semibold">HEURISTICS</span>
                     </div>
-                    <div id="mitre-breakdown" class="space-y-3 mt-2 text-xs">
-                        <div class="text-slate-400 text-center py-8">Analyzing incoming attack heuristics...</div>
+                    <div id="fingerprints-breakdown" class="space-y-3 mt-3 text-xs">
+                        <div class="text-slate-500 text-center py-8 font-mono">Listening for threat fingerprints...</div>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-cyber-border/70 text-[11px] text-slate-400 flex items-center justify-between">
-                    <span>Active Heuristic Engine</span>
-                    <span class="text-cyan-400 font-mono font-medium">Auto-Categorization ON</span>
+                <div class="mt-4 pt-3 border-t border-cyber-border/70 text-[11px] text-slate-400 flex items-center justify-between font-mono">
+                    <span>Decoy Protocols Active</span>
+                    <span class="text-emerald-400 font-semibold">SSH:22 • HTTP:80 • FTP:21 • TEL:23</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive MITRE ATT&CK Enterprise Matrix Navigator -->
+        <section class="cyber-card bg-cyber-panel border border-cyber-border rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-cyan-400 font-bold font-mono">⚡</span>
+                    <h2 class="text-sm font-semibold tracking-wide uppercase text-white font-mono">Enterprise MITRE ATT&CK Matrix Navigator (v14.1)</h2>
+                </div>
+                <span class="text-xs text-slate-400 font-mono">Live illuminated threat cells</span>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs font-mono" id="mitre-matrix-grid">
+                <!-- Initial Access -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded p-2.5 space-y-1.5">
+                    <div class="text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1">Initial Access</div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1190">
+                        <div class="font-bold text-slate-300">T1190</div>
+                        <div class="text-[10px] text-slate-400 truncate">Exploit Public App</div>
+                    </div>
+                </div>
+
+                <!-- Execution -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded p-2.5 space-y-1.5">
+                    <div class="text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1">Execution</div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1059.004">
+                        <div class="font-bold text-slate-300">T1059.004</div>
+                        <div class="text-[10px] text-slate-400 truncate">Unix Shell</div>
+                    </div>
+                </div>
+
+                <!-- Credential Access -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded p-2.5 space-y-1.5">
+                    <div class="text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1">Credential Access</div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1110.001">
+                        <div class="font-bold text-slate-300">T1110.001</div>
+                        <div class="text-[10px] text-slate-400 truncate">Password Guessing</div>
+                    </div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1552.001">
+                        <div class="font-bold text-slate-300">T1552.001</div>
+                        <div class="text-[10px] text-slate-400 truncate">Credentials in Files</div>
+                    </div>
+                </div>
+
+                <!-- Discovery -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded p-2.5 space-y-1.5">
+                    <div class="text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1">Discovery</div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1082">
+                        <div class="font-bold text-slate-300">T1082</div>
+                        <div class="text-[10px] text-slate-400 truncate">System Discovery</div>
+                    </div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1087.001">
+                        <div class="font-bold text-slate-300">T1087.001</div>
+                        <div class="text-[10px] text-slate-400 truncate">Local Accounts</div>
+                    </div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1046">
+                        <div class="font-bold text-slate-300">T1046</div>
+                        <div class="text-[10px] text-slate-400 truncate">Network Discovery</div>
+                    </div>
+                </div>
+
+                <!-- Command & Control -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded p-2.5 space-y-1.5">
+                    <div class="text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1">Command & Control</div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1105">
+                        <div class="font-bold text-slate-300">T1105</div>
+                        <div class="text-[10px] text-slate-400 truncate">Ingress Tool Transfer</div>
+                    </div>
+                </div>
+
+                <!-- Defense Evasion -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded p-2.5 space-y-1.5">
+                    <div class="text-[11px] text-slate-400 font-bold border-b border-slate-800 pb-1">Defense Evasion</div>
+                    <div class="mitre-cell p-1.5 rounded bg-slate-800/60 border border-slate-700/50" data-tech="T1070.004">
+                        <div class="font-bold text-slate-300">T1070.004</div>
+                        <div class="text-[10px] text-slate-400 truncate">File Deletion</div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Real-Time Intrusion Event Stream -->
-        <section class="cyber-card bg-cyber-panel/90 border border-cyber-border rounded-xl p-4">
+        <section class="cyber-card bg-cyber-panel border border-cyber-border rounded-xl p-4">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div class="flex items-center space-x-2">
                     <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
-                    <h2 class="text-sm font-semibold tracking-wide uppercase text-white">Real-Time Threat Ingestion Pipeline</h2>
+                    <h2 class="text-sm font-semibold tracking-wide uppercase text-white font-mono">Real-Time Intrusion Ingestion Pipeline</h2>
                     <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono" id="stream-count-badge">0 events</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button id="btn-clear-table" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700 transition">
+                    <button id="btn-clear-table" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700 transition font-mono">
                         Clear View
                     </button>
-                    <button id="btn-export-json" class="text-xs bg-cyan-950 hover:bg-cyan-900 text-cyan-300 px-3 py-1.5 rounded border border-cyan-800 transition">
+                    <button id="btn-export-json" class="text-xs bg-cyan-950 hover:bg-cyan-900 text-cyan-300 px-3 py-1.5 rounded border border-cyan-800 transition font-mono">
                         Export JSON
                     </button>
                 </div>
             </div>
 
             <!-- Table Container with scrolling -->
-            <div class="overflow-x-auto max-h-[420px] overflow-y-auto border border-cyber-border rounded-lg">
+            <div class="overflow-x-auto max-h-[440px] overflow-y-auto border border-cyber-border rounded-lg">
                 <table class="w-full text-left text-xs text-slate-300">
-                    <thead class="bg-cyber-darkest/90 text-slate-400 font-mono uppercase text-[11px] sticky top-0 z-20 border-b border-cyber-border">
+                    <thead class="bg-cyber-darkest/95 text-slate-400 font-mono uppercase text-[11px] sticky top-0 z-20 border-b border-cyber-border">
                         <tr>
                             <th class="py-2.5 px-3">Timestamp (UTC)</th>
                             <th class="py-2.5 px-3">Attacker IP</th>
                             <th class="py-2.5 px-3">Location</th>
-                            <th class="py-2.5 px-3">Service</th>
-                            <th class="py-2.5 px-3">Payload / Command</th>
+                            <th class="py-2.5 px-3">Target Service</th>
+                            <th class="py-2.5 px-3">Fingerprint / Threat Actor</th>
+                            <th class="py-2.5 px-3">Payload / Credentials</th>
+                            <th class="py-2.5 px-3">Risk</th>
                             <th class="py-2.5 px-3">MITRE Technique</th>
                             <th class="py-2.5 px-3 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="attack-table-body" class="divide-y divide-cyber-border/40 font-mono">
                         <tr>
-                            <td colspan="7" class="py-8 text-center text-slate-400">Waiting for live intrusion events...</td>
+                            <td colspan="9" class="py-8 text-center text-slate-500">Waiting for live intrusion events...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -222,22 +309,78 @@
         </section>
     </main>
 
+    <!-- Threat Actor Dossier Modal -->
+    <div id="dossier-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#0b101d] border border-cyan-800 rounded-xl shadow-[0_0_50px_rgba(6,182,212,0.25)] max-w-2xl w-full flex flex-col overflow-hidden">
+            <div class="bg-[#12192c] px-5 py-3.5 border-b border-cyber-border flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+                    <h3 class="text-sm font-mono font-bold text-white flex items-center gap-2">
+                        <span>THREAT ACTOR DOSSIER:</span>
+                        <span id="dossier-ip" class="text-cyan-400">0.0.0.0</span>
+                    </h3>
+                </div>
+                <button id="dossier-close-btn" class="text-slate-400 hover:text-white transition text-xl leading-none">&times;</button>
+            </div>
+            
+            <div class="p-5 space-y-4 max-h-[500px] overflow-y-auto text-xs font-mono">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-2.5 bg-slate-900 border border-slate-800 rounded">
+                        <div class="text-[10px] text-slate-400 uppercase">Risk Rating</div>
+                        <div class="text-lg font-bold text-rose-400 mt-0.5" id="dossier-score">0 / 100</div>
+                    </div>
+                    <div class="p-2.5 bg-slate-900 border border-slate-800 rounded">
+                        <div class="text-[10px] text-slate-400 uppercase">Total Attacks</div>
+                        <div class="text-lg font-bold text-white mt-0.5" id="dossier-total-events">0</div>
+                    </div>
+                    <div class="p-2.5 bg-slate-900 border border-slate-800 rounded">
+                        <div class="text-[10px] text-slate-400 uppercase">Origin</div>
+                        <div class="text-sm font-semibold text-slate-200 mt-1" id="dossier-location">Unknown</div>
+                    </div>
+                    <div class="p-2.5 bg-slate-900 border border-slate-800 rounded">
+                        <div class="text-[10px] text-slate-400 uppercase">Targeted Ports</div>
+                        <div class="text-sm font-semibold text-emerald-400 mt-1" id="dossier-services">-</div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-900/80 border border-slate-800 rounded space-y-1">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold">Identified Fingerprint / Signature</div>
+                    <div class="text-sm text-cyan-300 font-semibold" id="dossier-fingerprint">Generic Reconnaissance Prober</div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold">Observed Credentials / Payloads</div>
+                    <div class="bg-black p-3 rounded border border-slate-800 text-amber-300 max-h-28 overflow-y-auto" id="dossier-credentials">None observed</div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold">Recent Attack Timeline (Last 5 Events)</div>
+                    <div class="divide-y divide-slate-800 border border-slate-800 rounded bg-black/60" id="dossier-timeline"></div>
+                </div>
+            </div>
+
+            <div class="bg-[#12192c] px-5 py-3 border-t border-cyber-border flex justify-between items-center text-xs font-mono">
+                <span class="text-slate-400 text-[11px]">Auto-quarantined on high-confidence threshold</span>
+                <button id="dossier-dismiss-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded transition">Close Dossier</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Terminal Replay Modal -->
-    <div id="replay-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="replay-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-[#0d1117] border border-cyan-800/80 rounded-xl shadow-[0_0_40px_rgba(6,182,212,0.2)] max-w-3xl w-full flex flex-col overflow-hidden">
-            <!-- Modal Header -->
             <div class="bg-[#161b22] px-4 py-3 border-b border-cyber-border flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                     <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
                     <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
                     <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
-                    <span class="text-xs font-mono text-cyan-400 ml-2 font-semibold" id="modal-session-title">SSH Session Playback</span>
+                    <span class="text-xs font-mono text-cyan-400 ml-2 font-semibold" id="modal-session-title">SSH Keystroke Playback</span>
                 </div>
                 <button id="modal-close-btn" class="text-slate-400 hover:text-white transition text-lg leading-none">&times;</button>
             </div>
 
             <!-- Terminal Screen -->
-            <div class="p-4 bg-black min-h-[340px] max-h-[460px] overflow-y-auto font-mono text-xs leading-relaxed text-emerald-400 relative">
+            <div class="p-4 bg-black min-h-[350px] max-h-[460px] overflow-y-auto font-mono text-xs leading-relaxed text-emerald-400 relative">
                 <div class="crt-scanline"></div>
                 <pre id="terminal-content" class="whitespace-pre-wrap font-mono"></pre>
                 <span class="inline-block w-2 h-4 bg-emerald-400 animate-pulse ml-0.5" id="terminal-cursor"></span>
@@ -245,24 +388,23 @@
 
             <!-- Modal Player Controls -->
             <div class="bg-[#161b22] px-4 py-2.5 border-t border-cyber-border flex items-center justify-between text-xs">
-                <div class="flex items-center space-x-2">
-                    <button id="btn-replay-play" class="bg-cyan-900 hover:bg-cyan-800 text-cyan-200 px-3 py-1 rounded border border-cyan-700 transition">
+                <div class="flex items-center space-x-3">
+                    <button id="btn-replay-play" class="bg-cyan-900 hover:bg-cyan-800 text-cyan-200 px-3 py-1 rounded border border-cyan-700 transition font-mono">
                         Restart Replay
                     </button>
-                    <span class="text-slate-400 font-mono text-[11px]" id="replay-speed-indicator">Speed: 1x</span>
+                    <span class="text-slate-400 font-mono text-[11px]" id="replay-speed-indicator">Speed: 1x (Authentic)</span>
                 </div>
-                <div class="text-slate-400 font-mono text-[11px]" id="replay-timestamp-indicator">00:00</div>
+                <div class="text-slate-400 font-mono text-[11px]" id="replay-timestamp-indicator">Live Playback</div>
             </div>
         </div>
     </div>
 
     <!-- Footer -->
-    <footer class="border-t border-cyber-border bg-cyber-dark py-4 text-center text-xs text-slate-400">
-        <p>Honeypot-System v2.0 &bull; Autonomous Multi-Service Deception Grid &bull; MIT Licensed</p>
+    <footer class="border-t border-cyber-border bg-cyber-dark py-3.5 text-center text-xs text-slate-500 font-mono">
+        <p>Honeypot-System v2.0 Enterprise &bull; Autonomous Multi-Service Deception Grid &bull; MIT Licensed</p>
     </footer>
 
     <!-- App Logic -->
     <script src="/static/app.js"></script>
 </body>
 </html>
-

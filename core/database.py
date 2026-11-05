@@ -2,7 +2,7 @@
 core/database.py
 ────────────────
 Asynchronous SQLite Database Engine with Automated Table Migrations,
-Threat Event Logging, Session Tracking, and Real-Time Event Dispatching.
+Threat Event Logging, Session Tracking, Risk Scoring, and Real-Time Event Dispatching.
 """
 
 import asyncio
@@ -12,6 +12,7 @@ import logging
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 import aiosqlite
 
+from core.classifier import profile_threat_actor
 from core.config import settings
 
 logger = logging.getLogger("honeypot.database")
@@ -68,7 +69,6 @@ def _resolve_geoip(source_ip: str, geoip_override: Optional[Dict[str, Any]] = No
 
     hash_val = int(hashlib.md5(source_ip.encode("utf-8")).hexdigest(), 16)
     selected = geo_pool[hash_val % len(geo_pool)]
-    # Apply minor offset derived from the IP hash to separate multiple IPs in the same city
     lat_offset = ((hash_val % 100) - 50) / 500.0
     lon_offset = (((hash_val >> 8) % 100) - 50) / 500.0
 
@@ -100,7 +100,10 @@ async def init_db() -> None:
                 longitude REAL DEFAULT 0.0,
                 mitre_technique_id TEXT,
                 mitre_name TEXT,
-                mitre_tactic TEXT
+                mitre_tactic TEXT,
+                fingerprint TEXT DEFAULT 'Generic Reconnaissance Probe',
+                risk_score INTEGER DEFAULT 25,
+                severity TEXT DEFAULT 'LOW'
             )
         """)
 
@@ -122,6 +125,12 @@ async def init_db() -> None:
                 await db.execute("ALTER TABLE attacks ADD COLUMN latitude REAL DEFAULT 0.0")
             if "longitude" not in columns:
                 await db.execute("ALTER TABLE attacks ADD COLUMN longitude REAL DEFAULT 0.0")
+            if "fingerprint" not in columns:
+                await db.execute("ALTER TABLE attacks ADD COLUMN fingerprint TEXT DEFAULT 'Generic Reconnaissance Probe'")
+            if "risk_score" not in columns:
+                await db.execute("ALTER TABLE attacks ADD COLUMN risk_score INTEGER DEFAULT 25")
+            if "severity" not in columns:
+                await db.execute("ALTER TABLE attacks ADD COLUMN severity TEXT DEFAULT 'LOW'")
 
         # Create indexing for high-frequency queries
         await db.execute("CREATE INDEX IF NOT EXISTS idx_attacks_timestamp ON attacks (timestamp DESC)")
@@ -140,9 +149,12 @@ async def log_attack(
     geoip: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
-    Log an intrusion event asynchronously and broadcast to real-time subscribers.
+    Log an intrusion event asynchronously, compute threat intelligence profile & risk score,
+    and broadcast to real-time subscribers.
     """
     geo = _resolve_geoip(source_ip, geoip)
+    profile = profile_threat_actor(service, payload or "", credentials)
+
     primary_technique_id = None
     primary_name = None
     primary_tactic = None
@@ -166,7 +178,12 @@ async def log_attack(
         "longitude": geo["lon"],
         "mitre_technique_id": primary_technique_id,
         "mitre_name": primary_name,
-        "mitre_tactic": primary_tactic
+        "mitre_tactic": primary_tactic,
+        "fingerprint": profile["fingerprint"],
+        "risk_score": profile["risk_score"],
+        "severity": profile["severity"],
+        "severity_color": profile["severity_color"],
+        "iocs": profile["iocs"]
     }
 
     try:
@@ -175,8 +192,9 @@ async def log_attack(
                 INSERT INTO attacks (
                     timestamp, source_ip, service, payload, credentials,
                     geoip_country, geoip_city, latitude, longitude,
-                    mitre_technique_id, mitre_name, mitre_tactic
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    mitre_technique_id, mitre_name, mitre_tactic,
+                    fingerprint, risk_score, severity
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 iso_timestamp,
                 source_ip,
@@ -189,7 +207,10 @@ async def log_attack(
                 geo["lon"],
                 primary_technique_id,
                 primary_name,
-                primary_tactic
+                primary_tactic,
+                profile["fingerprint"],
+                profile["risk_score"],
+                profile["severity"]
             ))
             await db.commit()
             attack_record["id"] = cursor.lastrowid
@@ -234,7 +255,8 @@ async def get_recent_attacks(limit: int = 50) -> List[Dict[str, Any]]:
         async with db.execute("""
             SELECT id, timestamp, source_ip, service, payload, credentials,
                    geoip_country, geoip_city, latitude, longitude,
-                   mitre_technique_id, mitre_name, mitre_tactic
+                   mitre_technique_id, mitre_name, mitre_tactic,
+                   fingerprint, risk_score, severity
             FROM attacks
             ORDER BY id DESC
             LIMIT ?
@@ -244,7 +266,7 @@ async def get_recent_attacks(limit: int = 50) -> List[Dict[str, Any]]:
 
 
 async def get_system_stats() -> Dict[str, Any]:
-    """Retrieve comprehensive intrusion analytics, MITRE breakdowns, and active sessions."""
+    """Retrieve comprehensive intrusion analytics, MITRE breakdowns, risk scores, and active sessions."""
     async with aiosqlite.connect(settings.DB_PATH) as db:
         db.row_factory = aiosqlite.Row
 
@@ -257,6 +279,11 @@ async def get_system_stats() -> Dict[str, Any]:
         async with db.execute("SELECT COUNT(DISTINCT source_ip) AS total_ips FROM attacks") as cursor:
             row = await cursor.fetchone()
             unique_ips = row["total_ips"] if row else 0
+
+        # Average Threat Risk Score
+        async with db.execute("SELECT AVG(risk_score) AS avg_risk FROM attacks") as cursor:
+            row = await cursor.fetchone()
+            avg_risk = round(row["avg_risk"], 1) if (row and row["avg_risk"]) else 25.0
 
         # Attacks grouped by service
         async with db.execute("""
@@ -280,6 +307,18 @@ async def get_system_stats() -> Dict[str, Any]:
             mitre_rows = await cursor.fetchall()
             top_mitre_techniques = [dict(r) for r in mitre_rows]
 
+        # Top Threat Fingerprints / Botnets
+        async with db.execute("""
+            SELECT fingerprint, COUNT(*) AS count
+            FROM attacks
+            WHERE fingerprint IS NOT NULL
+            GROUP BY fingerprint
+            ORDER BY count DESC
+            LIMIT 6
+        """) as cursor:
+            fp_rows = await cursor.fetchall()
+            top_fingerprints = [dict(r) for r in fp_rows]
+
         # Active SSH / interactive sessions (ended_at is null)
         async with db.execute("SELECT COUNT(*) AS active FROM sessions WHERE ended_at IS NULL") as cursor:
             row = await cursor.fetchone()
@@ -292,10 +331,12 @@ async def get_system_stats() -> Dict[str, Any]:
             "sensor_name": settings.SENSOR_NAME,
             "total_attacks": total_attacks,
             "unique_ips": unique_ips,
+            "avg_risk_score": avg_risk,
             "active_sessions": active_sessions,
             "high_confidence_threats_count": len(high_conf_ips),
             "attacks_per_service": attacks_per_service,
             "top_mitre_techniques": top_mitre_techniques,
+            "top_fingerprints": top_fingerprints
         }
 
 
@@ -311,4 +352,3 @@ async def get_high_confidence_ips(threshold: int = 5) -> List[str]:
         """, (threshold,)) as cursor:
             rows = await cursor.fetchall()
             return [row[0] for row in rows]
-
