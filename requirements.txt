@@ -1,6 +1,6 @@
 fastapi>=0.115.8
 uvicorn[standard]>=0.54.0
-paramiko>=3.5.1
+paramiko>=5.1.0
 aiosqlite>=0.21.0
 pydantic>=2.14.4
 pydantic-settings>=2.16.3
