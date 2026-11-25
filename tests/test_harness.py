@@ -40,6 +40,8 @@ def ensure_honeypot_running():
     except requests.RequestException:
         server_running = False
 
+    server: uvicorn.Server | None = None
+    server_thread: threading.Thread | None = None
     if not server_running:
         from api.server import app
         config = uvicorn.Config(app, host=TARGET_HOST, port=settings.API_PORT, log_level="warning")
@@ -54,7 +56,13 @@ def ensure_honeypot_running():
                     break
             except requests.RequestException:
                 continue
-    yield
+    try:
+        yield
+    finally:
+        if server is not None:
+            server.should_exit = True
+        if server_thread is not None:
+            server_thread.join(timeout=10)
 
 
 def test_http_decoy() -> None:
