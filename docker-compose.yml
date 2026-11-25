@@ -1,87 +1,41 @@
-# ============================================================
-#  HoneypotNet — docker-compose.yml
-# ============================================================
-#  Each honeypot runs in its own container.  They share:
-#    • A named volume for the SQLite database
-#    • A named volume for log files
-#    • A bind-mounted config.yaml
-#
-#  Usage:
-#    docker-compose up -d --build
-#    docker-compose logs -f
-# ============================================================
-
-version: "3.9"
-
-x-common: &common
-  restart: unless-stopped
-  volumes:
-    - honeypot-data:/app/data
-    - honeypot-logs:/app/logs
-    - ./config.yaml:/app/config.yaml:ro
-  networks:
-    - honeypot-net
-
 services:
-  # ── SSH Honeypot ──
-  ssh:
+  honeypot-node:
     build:
       context: .
-      dockerfile: docker/Dockerfile.ssh
-    container_name: honeypot-ssh
-    <<: *common
+      dockerfile: Dockerfile
+    container_name: honeypot-system-v2
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
     ports:
-      - "2222:2222"
-
-  # ── HTTP Honeypot ──
-  http:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.http
-    container_name: honeypot-http
-    <<: *common
-    ports:
-      - "8080:8080"
-
-  # ── FTP Honeypot ──
-  ftp:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.ftp
-    container_name: honeypot-ftp
-    <<: *common
-    ports:
-      - "2121:2121"
-
-  # ── Telnet Honeypot ──
-  telnet:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.telnet
-    container_name: honeypot-telnet
-    <<: *common
-    ports:
-      - "2323:2323"
-
-  # ── Admin Dashboard ──
-  admin:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.admin
-    container_name: honeypot-admin
-    <<: *common
-    ports:
-      - "5000:5000"
-    depends_on:
-      - ssh
-      - http
-      - ftp
-      - telnet
-
-volumes:
-  honeypot-data:
-  honeypot-logs:
-
-networks:
-  honeypot-net:
-    driver: bridge
+      # Host:Container port mappings
+      - "22:2222"     # Standard SSH port mapped to SSH decoy
+      - "80:8080"     # Standard HTTP port mapped to Web decoy
+      - "21:2121"     # Standard FTP port mapped to FTP decoy
+      - "23:2323"     # Standard Telnet port mapped to IoT decoy
+      - "9090:9090"   # Real-time SOC Dashboard & Threat Intelligence Feeds
+    environment:
+      - SSH_PORT=2222
+      - HTTP_PORT=8080
+      - FTP_PORT=2121
+      - TELNET_PORT=2323
+      - API_PORT=9090
+      - TARPIT_ENABLED=true
+      - TARPIT_BYTE_RATE=10
+      - MALICIOUS_IP_THRESHOLD=5
+      - SENSOR_NAME=honeypot-grid-node-01
+    volumes:
+      # Persistent SQLite database & session keystroke recordings
+      - ./data:/app/data
+      - ./recordings:/app/recordings
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
